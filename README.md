@@ -27,12 +27,32 @@ TrollVNC is a VNC server for iOS devices, allowing remote access and control of 
 
 1. Fork this repo and run GitHub workflow “Build TrollVNC”.
 2. Download “TrollVNC” from Releases and install it on your iOS device.
-3. Configure the VNC server settings from “Settings” → “TrollVNC” or the standalone “TrollVNC” app as needed.
+3. Jailbreak packages on `change_default` omit the Settings pane by default. Configure through the `com.82flex.trollvnc` preferences domain, a bundled `Managed.plist`, or command-line options. The standalone TrollVNC app retains its settings interface.
 4. Or, run the following command on iOS device or simulator:
 
 ```sh
 trollvncserver -p 15901 -n "My iPhone" [options]
 ```
+
+### Build without the PreferenceLoader Settings pane
+
+`change_default` defaults to `WITH_PREFERENCES=0` for jailbreak packages
+(default/rootless/roothide). The Settings pane and its PreferenceLoader entry
+are omitted, and the `.deb` has no `preferenceloader` dependency. The daemon,
+launch daemon, Control Center toggle, localization and optional `Managed.plist`
+remain available. Existing saved settings are still read; removing the pane
+does not reset them or change VNC authentication or frame-rate parsing.
+
+```sh
+source devkit/rootless.sh
+FINALPACKAGE=1 gmake clean package WITH_PREFERENCES=0
+```
+
+Use `WITH_PREFERENCES=1` to build the original Settings pane. Bootstrap/TrollStore
+builds default to `WITH_PREFERENCES=1` and reject `WITH_PREFERENCES=0`, because the
+standalone app uses the preference controllers and resources internally.
+When upgrading the same package, dpkg removes the old pane and its entry;
+PreferenceLoader itself may remain installed for other tweaks.
 
 ### Wi-Fi address binding
 

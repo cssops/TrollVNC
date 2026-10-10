@@ -1,6 +1,17 @@
 export PACKAGE_VERSION := 3.2-272
 export THEOS_PACKAGE_SCHEME
 
+# Jailbreak packages omit the Settings pane by default.
+ifeq ($(THEBOOTSTRAP),1)
+WITH_PREFERENCES ?= 1
+ifeq ($(WITH_PREFERENCES),0)
+$(error WITH_PREFERENCES=0 is only supported for jailbreak packages)
+endif
+else
+WITH_PREFERENCES ?= 0
+endif
+export WITH_PREFERENCES
+
 ifeq ($(THEOS_DEVICE_SIMULATOR),1)
 ARCHS := arm64 x86_64
 TARGET := simulator:clang:latest:15.0
@@ -116,7 +127,9 @@ endif
 
 include $(THEOS_MAKE_PATH)/tool.mk
 
+ifeq ($(WITH_PREFERENCES),1)
 SUBPROJECTS += prefs/TrollVNCPrefs
+endif
 SUBPROJECTS += prefs/CCTrollVNC
 
 ifeq ($(THEBOOTSTRAP),1)
