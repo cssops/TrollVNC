@@ -42,7 +42,7 @@
 
 "Bind Address" = "绑定地址";
 
-"Bind to a local IP address, or enter en0 for the current Wi-Fi IPv4 address only. Restart after Wi-Fi address changes. Leave empty to listen on all interfaces." = "绑定到指定本地 IP 地址，或填写 en0 以仅监听当前 Wi-Fi IPv4 地址。Wi-Fi 地址变化后需重启服务。留空则监听所有网卡。";
+"Defaults to en0 for the current Wi-Fi IPv4 address only. Waits until Wi-Fi obtains an IPv4 address. Restart after Wi-Fi address changes. Enter a local IP address, or leave empty to listen on all interfaces." = "默认使用 en0，仅监听当前 Wi-Fi IPv4 地址。未获取到地址时持续等待，直到 Wi-Fi 获得 IPv4 地址。Wi-Fi 地址变化后需重启服务。也可填写指定本地 IP 地址，留空则监听所有网卡。";
 
 "Cancel" = "取消";
 
