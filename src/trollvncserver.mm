@@ -70,7 +70,7 @@ static BOOL gEnabled = YES;
 static int gPort = kTvDefaultPort;
 static int gTvCtlPort = 0;        // port for control connections (0 = disabled)
 static BOOL gBindEn0 = NO;       // en0 mode binds only its current IPv4 address
-static NSString *gBindHost = nil; // optional bind address from CLI/config
+static NSString *gBindHost = @"en0"; // Wi-Fi IPv4 by default; CLI/config can override
 static NSString *gDesktopName = @"TrollVNC";
 static BOOL gViewOnly = NO;
 static double gKeepAliveSec = 0.0; // 15..86400
@@ -327,7 +327,7 @@ static void printUsageAndExit(const char *prog) {
     fprintf(stderr, "Usage: %s [-p port] [-n name] [options]\n\n", prog);
 
     fprintf(stderr, "Basic:\n");
-    fprintf(stderr, "  -b host    Bind host (IPv4/IPv6 literal or en0 for Wi-Fi IPv4; default to all)\n");
+    fprintf(stderr, "  -b host    Bind host (IPv4/IPv6 literal or en0 for Wi-Fi IPv4; default to en0)\n");
     fprintf(stderr, "  -p port    VNC TCP port (default: %d)\n", gPort);
     fprintf(stderr, "  -c port    Client management TCP port (0=off, default: 0)\n");
     fprintf(stderr, "  -n name    Desktop name (default: %s)\n", [gDesktopName UTF8String]);
@@ -4607,8 +4607,13 @@ static void setupRfbScreen(int argc, const char *argv[]) {
     if (gBindEn0) {
         bindHost = tvEn0IPv4Address();
         if (!bindHost) {
-            TVPrintError("BindHost=en0 requires an active Wi-Fi IPv4 address; refusing to listen on all interfaces");
-            exit(EXIT_FAILURE);
+            TVLog(@"BindHost=en0: waiting for a Wi-Fi IPv4 address");
+            do {
+                sleep(1);
+                @autoreleasepool {
+                    bindHost = tvEn0IPv4Address();
+                }
+            } while (!bindHost);
         }
         // LibVNCServer otherwise opens an additional IPv6 wildcard listener.
         gScreen->ipv6port = -1;
