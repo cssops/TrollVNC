@@ -86,7 +86,7 @@
 			<key>label</key>
 			<string></string>
 			<key>footerText</key>
-			<string>VNC TCP port. Default 5901. Valid range 1024–65535.</string>
+			<string>VNC TCP port. Default 15901. Valid range 1024–65535.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -98,7 +98,7 @@
 			<key>label</key>
 			<string>TCP Port</string>
 			<key>default</key>
-			<integer>5901</integer>
+			<integer>15901</integer>
 			<key>decimal</key>
 			<true/>
 			<key>isNumeric</key>
@@ -106,7 +106,7 @@
 			<key>noAutoCorrect</key>
 			<true/>
 			<key>placeholder</key>
-			<string>5901</string>
+			<string>15901</string>
 		</dict>
 
 		<!-- Full-access Password -->
@@ -127,6 +127,8 @@
 			<string>FullPassword</string>
 			<key>label</key>
 			<string>Full-access Password</string>
+			<key>default</key>
+			<string>TrollVNC</string>
 			<key>placeholder</key>
 			<string>8 characters max.</string>
 		</dict>
