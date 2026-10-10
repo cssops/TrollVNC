@@ -62,7 +62,7 @@
 			<key>label</key>
 			<string></string>
 			<key>footerText</key>
-			<string>Bind to a specific local IP address. Leave empty to listen on all interfaces.</string>
+			<string>Bind to a local IP address, or enter en0 for the current Wi-Fi IPv4 address only. Restart after Wi-Fi address changes. Leave empty to listen on all interfaces.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
