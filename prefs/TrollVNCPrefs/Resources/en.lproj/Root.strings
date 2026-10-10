@@ -42,7 +42,7 @@
 
 "Bind Address" = "Bind Address";
 
-"Bind to a local IP address, or enter en0 for the current Wi-Fi IPv4 address only. Restart after Wi-Fi address changes. Leave empty to listen on all interfaces." = "Bind to a local IP address, or enter en0 for the current Wi-Fi IPv4 address only. Restart after Wi-Fi address changes. Leave empty to listen on all interfaces.";
+"Defaults to en0 for the current Wi-Fi IPv4 address only. Waits until Wi-Fi obtains an IPv4 address. Restart after Wi-Fi address changes. Enter a local IP address, or leave empty to listen on all interfaces." = "Defaults to en0 for the current Wi-Fi IPv4 address only. Waits until Wi-Fi obtains an IPv4 address. Restart after Wi-Fi address changes. Enter a local IP address, or leave empty to listen on all interfaces.";
 
 "Cancel" = "Cancel";
 
