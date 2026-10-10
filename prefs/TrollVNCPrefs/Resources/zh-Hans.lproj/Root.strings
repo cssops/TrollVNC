@@ -42,7 +42,7 @@
 
 "Bind Address" = "绑定地址";
 
-"Bind to a specific local IP address. Leave empty to listen on all interfaces." = "绑定到指定本地 IP 地址，可选。留空则监听所有网卡。";
+"Bind to a local IP address, or enter en0 for the current Wi-Fi IPv4 address only. Restart after Wi-Fi address changes. Leave empty to listen on all interfaces." = "绑定到指定本地 IP 地址，或填写 en0 以仅监听当前 Wi-Fi IPv4 地址。Wi-Fi 地址变化后需重启服务。留空则监听所有网卡。";
 
 "Cancel" = "取消";
 
@@ -228,7 +228,7 @@
 
 "Viewer" = "查看器";
 
-"VNC TCP port. Default 5901. Valid range 1024–65535." = "VNC TCP 端口。默认 5901。有效范围 1024–65535。";
+"VNC TCP port. Default 15901. Valid range 1024–65535." = "VNC TCP 端口。默认 15901。有效范围 1024–65535。";
 
 "Wheel Step (px)" = "滚轮步进（像素）";
 

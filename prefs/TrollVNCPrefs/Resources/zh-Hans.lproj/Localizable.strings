@@ -29,7 +29,7 @@
 "Are you sure you want to restart the VNC service?" = "确定要重启 VNC 服务吗？";
 
 /* No comment provided by engineer. */
-"Bind address must be a valid IPv4/IPv6 literal, or empty to listen on all interfaces." = "绑定地址必须是合法的 IPv4/IPv6 字面量，或留空以监听所有网卡。";
+"Bind address must be a valid IPv4/IPv6 literal, en0 for Wi-Fi IPv4, or empty to listen on all interfaces." = "绑定地址必须是合法的 IPv4/IPv6 地址、en0（Wi-Fi IPv4），或留空以监听所有网卡。";
 
 /* No comment provided by engineer. */
 "Block" = "封禁";
