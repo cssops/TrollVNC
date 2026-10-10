@@ -31,15 +31,27 @@ TrollVNC is a VNC server for iOS devices, allowing remote access and control of 
 4. Or, run the following command on iOS device or simulator:
 
 ```sh
-trollvncserver -p 5901 -n "My iPhone" [options]
+trollvncserver -p 15901 -n "My iPhone" [options]
 ```
+
+### Wi-Fi address binding
+
+Set **Bind Address** to `en0`, or use `trollvncserver -b en0`.
+At startup, the server resolves the active `en0` IPv4 address and binds VNC
+and optional HTTP/WebSocket listeners to that address. IPv6 listeners are
+disabled in this mode. If `en0` has no active IPv4 address, startup fails;
+it never falls back to listening on all interfaces. Restart the service after
+switching Wi-Fi networks or after its DHCP address changes. This is local
+address binding, not a filter on clients' source networks; routed clients that
+can reach that address may still connect. An empty Bind Address continues to
+listen on all interfaces.
 
 ### Options
 
 **Basic**:
 
-- `-b host`   Bind host address (IPv4/IPv6 literal, default to all interfaces)
-- `-p port`   TCP port for VNC (default: `5901`)
+- `-b host`   Bind host address (IPv4/IPv6 literal or `en0` for Wi-Fi IPv4, default to all interfaces)
+- `-p port`   TCP port for VNC (default: `15901`)
 - `-c port`   TCP port for client management (listening on localhost only; `0` disables, default: `0`)
 - `-n name`   Desktop name shown to clients (default: `TrollVNC`)
 - `-v`        View-only (ignore input)
@@ -164,31 +176,31 @@ By default, dirty detection is **disabled** because it usually has a high CPU co
 Low-latency interactive (LAN):
 
 ```sh
-trollvncserver -p 5901 -n "My iPhone" -s 0.75 -d 0.008 -Q 1 -t 32 -P 35 -R 512
+trollvncserver -p 15901 -n "My iPhone" -s 0.75 -d 0.008 -Q 1 -t 32 -P 35 -R 512
 ```
 
 Battery/bandwidth saver (cellular/WAN):
 
 ```sh
-trollvncserver -p 5901 -n "My iPhone" -s 0.5 -d 0.025 -Q 2 -t 64 -P 50 -R 128
+trollvncserver -p 15901 -n "My iPhone" -s 0.5 -d 0.025 -Q 2 -t 64 -P 50 -R 128
 ```
 
 High quality on fast LAN:
 
 ```sh
-trollvncserver -p 5901 -n "My iPhone" -s 1.0 -d 0.012 -Q 2 -t 32 -P 30 -R 512
+trollvncserver -p 15901 -n "My iPhone" -s 1.0 -d 0.012 -Q 2 -t 32 -P 30 -R 512
 ```
 
 Choppy network (high RTT/loss):
 
 ```sh
-trollvncserver -p 5901 -n "My iPhone" -s 0.66 -d 0.035 -Q 1 -t 64 -P 60 -R 128
+trollvncserver -p 15901 -n "My iPhone" -s 0.66 -d 0.035 -Q 1 -t 64 -P 60 -R 128
 ```
 
 Older devices (CPU-limited):
 
 ```sh
-trollvncserver -p 5901 -n "My iPhone" -s 0.5 -d 0.02 -Q 1 -t 64 -P 40 -R 256
+trollvncserver -p 15901 -n "My iPhone" -s 0.5 -d 0.02 -Q 1 -t 64 -P 40 -R 256
 ```
 
 Optional: add `-a` to any profile if you observe occasional stalls due to encoder contention; remove it if tearing is noticeable:
@@ -277,7 +289,7 @@ TrollVNC does not draw a cursor by default; most VNC viewers render their own po
 
 ## Authentication
 
-Classic VNC authentication can be enabled via environment variables:
+The default full-access password is `TrollVNC`. An existing saved password takes precedence; an explicitly empty password disables full-access authentication. Environment variables can override the default when no saved password is present:
 
 - `TROLLVNC_PASSWORD`: full-access password. Enables VNC auth when set.
 - `TROLLVNC_VIEWONLY_PASSWORD`: optional view-only password. When present, clients authenticating with this password can view but cannot send input.
@@ -287,7 +299,7 @@ Classic VNC authentication can be enabled via environment variables:
 ```sh
 export TROLLVNC_PASSWORD=editpass
 export TROLLVNC_VIEWONLY_PASSWORD=viewpass   # optional
-trollvncserver -p 5901 -n "My iPhone"
+trollvncserver -p 15901 -n "My iPhone"
 ```
 
 **Notes**:
@@ -308,10 +320,10 @@ TrollVNC can start LibVNCServer’s built-in HTTP server to serve a browser-base
 
 ```sh
 # Enable web client on port 5801 using the default web root
-trollvncserver -p 5901 -H 5801
+trollvncserver -p 15901 -H 5801
 
 # Enable web client on port 8081 with a custom web root
-trollvncserver -p 5901 -H 8081 -D /var/www/trollvnc/webclients
+trollvncserver -p 15901 -H 8081 -D /var/www/trollvnc/webclients
 ```
 
 ### Using Secure WebSockets
@@ -343,7 +355,7 @@ Copy the host cert and key to the device (choose any readable path).
 Start TrollVNC with WSS enabled.
 
   ```sh
-  trollvncserver -p 5901 -H 5801 \
+  trollvncserver -p 15901 -H 5801 \
     -e /usr/share/trollvnc/ssl/192.168.2.100/cert.pem \
     -k /usr/share/trollvnc/ssl/192.168.2.100/key.pem
   ```
@@ -476,7 +488,7 @@ TrollVNC can be preconfigured via a bundled `Managed.plist` for supervised or fl
 
 - Strings:
   - `DesktopName`: Desktop name shown to clients
-  - `BindHost`: IPv4/IPv6 address literal to bind
+  - `BindHost`: IPv4/IPv6 address literal, or `en0` to bind the current Wi-Fi IPv4 address only
   - `ModifierMap`: `std` | `altcmd`
   - `FrameRateSpec`: e.g., `"60"`, `"30-60"`, or `"30:60:120"`
   - `WheelTuning`: advanced wheel tuning string, e.g., `"amp=0.25,cap=1.0,max=256,clamp=3.0"`
@@ -488,11 +500,11 @@ TrollVNC can be preconfigured via a bundled `Managed.plist` for supervised or fl
     - `ReverseSocket`: `host:port` or `[ipv6]:port` (preferred)
     - Backward-compat: `ReverseHost` + `ReversePort`
   - Authentication:
-    - `FullPassword`: full-access password (first 8 chars used)
+    - `FullPassword`: full-access password (default `TrollVNC` when absent; explicitly empty disables it; first 8 chars used)
     - `ViewOnlyPassword`: view-only password (first 8 chars used)
 
 - Numbers:
-  - `Port` (1024..65535; `0`/<1024 is treated as invalid and falls back to 5901)
+  - `Port` (1024..65535; `0`/<1024 is treated as invalid and falls back to 15901)
   - `KeepAliveSec` (0 or 15..300; values 0..15 are treated as 0)
   - `Scale` (0.1..1.0)
   - `DeferWindowSec` (0..0.5)
@@ -552,7 +564,7 @@ TrollVNC can be preconfigured via a bundled `Managed.plist` for supervised or fl
   <key>DesktopName</key>
   <string>TrollVNC</string>
   <key>Port</key>
-  <integer>5901</integer>
+  <integer>15901</integer>
   <key>Scale</key>
   <real>0.75</real>
   <key>FrameRateSpec</key>
@@ -601,7 +613,7 @@ Due to a GitHub limit, the manual form exposes 10 commonly used options:
 
 - `is_managed`: whether to bundle a `Managed.plist` (managed deployment)
 - `desktop_name`: display name shown to VNC clients
-- `port`: VNC TCP port (default `5901`)
+- `port`: VNC TCP port (default `15901`)
 - `view_only`: force view-only (ignore input)
 - `scale`: output scale (`0.1–1.0`)
 - `frame_rate_spec`: frame rate, e.g. `60` | `30-60` | `30:60:120`
