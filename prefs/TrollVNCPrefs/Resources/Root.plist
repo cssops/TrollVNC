@@ -62,7 +62,7 @@
 			<key>label</key>
 			<string></string>
 			<key>footerText</key>
-			<string>Bind to a local IP address, or enter en0 for the current Wi-Fi IPv4 address only. Restart after Wi-Fi address changes. Leave empty to listen on all interfaces.</string>
+			<string>Defaults to en0 for the current Wi-Fi IPv4 address only. Waits until Wi-Fi obtains an IPv4 address. Restart after Wi-Fi address changes. Enter a local IP address, or leave empty to listen on all interfaces.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -71,6 +71,8 @@
 			<string>com.82flex.trollvnc</string>
 			<key>key</key>
 			<string>BindHost</string>
+			<key>default</key>
+			<string>en0</string>
 			<key>label</key>
 			<string>Bind Address</string>
 			<key>placeholder</key>
