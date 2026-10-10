@@ -36,10 +36,12 @@ trollvncserver -p 15901 -n "My iPhone" [options]
 
 ### Wi-Fi address binding
 
-Set **Bind Address** to `en0`, or use `trollvncserver -b en0`.
+**Bind Address** defaults to `en0`, including when no saved setting exists.
+You can also select this mode with `trollvncserver -b en0`.
 At startup, the server resolves the active `en0` IPv4 address and binds VNC
 and optional HTTP/WebSocket listeners to that address. IPv6 listeners are
-disabled in this mode. If `en0` has no active IPv4 address, startup fails;
+disabled in this mode. If `en0` has no active IPv4 address, startup waits
+and retries once per second until Wi-Fi obtains an IPv4 address;
 it never falls back to listening on all interfaces. Restart the service after
 switching Wi-Fi networks or after its DHCP address changes. This is local
 address binding, not a filter on clients' source networks; routed clients that
@@ -50,7 +52,7 @@ listen on all interfaces.
 
 **Basic**:
 
-- `-b host`   Bind host address (IPv4/IPv6 literal or `en0` for Wi-Fi IPv4, default to all interfaces)
+- `-b host`   Bind host address (IPv4/IPv6 literal or `en0` for Wi-Fi IPv4, default: `en0`)
 - `-p port`   TCP port for VNC (default: `15901`)
 - `-c port`   TCP port for client management (listening on localhost only; `0` disables, default: `0`)
 - `-n name`   Desktop name shown to clients (default: `TrollVNC`)
@@ -488,7 +490,7 @@ TrollVNC can be preconfigured via a bundled `Managed.plist` for supervised or fl
 
 - Strings:
   - `DesktopName`: Desktop name shown to clients
-  - `BindHost`: IPv4/IPv6 address literal, or `en0` to bind the current Wi-Fi IPv4 address only
+  - `BindHost`: IPv4/IPv6 address literal, or `en0` (default) to wait for and bind the current Wi-Fi IPv4 address only
   - `ModifierMap`: `std` | `altcmd`
   - `FrameRateSpec`: e.g., `"60"`, `"30-60"`, or `"30:60:120"`
   - `WheelTuning`: advanced wheel tuning string, e.g., `"amp=0.25,cap=1.0,max=256,clamp=3.0"`
