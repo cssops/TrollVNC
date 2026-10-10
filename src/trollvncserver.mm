@@ -30,6 +30,8 @@
 #import <cstring>
 #import <errno.h>
 #import <fcntl.h>
+#import <ifaddrs.h>
+#import <net/if.h>
 #import <mach-o/dyld.h>
 #import <netinet/in.h>
 #import <netinet/tcp.h>
@@ -65,8 +67,9 @@
 int gOrientationFixQuad = 0; // 0=0°, 1=90°CW, 2=180°, 3=270°CW
 
 static BOOL gEnabled = YES;
-static int gPort = 5901;
+static int gPort = kTvDefaultPort;
 static int gTvCtlPort = 0;        // port for control connections (0 = disabled)
+static BOOL gBindEn0 = NO;       // en0 mode binds only its current IPv4 address
 static NSString *gBindHost = nil; // optional bind address from CLI/config
 static NSString *gDesktopName = @"TrollVNC";
 static BOOL gViewOnly = NO;
@@ -180,6 +183,31 @@ static TVBindHostKind tvClassifyBindHost(NSString *host, in_addr_t *outIPv4, str
     }
 
     return kTVBindHostKindInvalid;
+}
+
+// Resolve en0 only, never the default route (which could be cellular or a VPN).
+static NSString *tvEn0IPv4Address(void) {
+    struct ifaddrs *addresses = NULL;
+    if (getifaddrs(&addresses) != 0)
+        return nil;
+
+    NSString *address = nil;
+    for (struct ifaddrs *ifa = addresses; ifa; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_name || !ifa->ifa_addr || strcmp(ifa->ifa_name, "en0") != 0 ||
+            ifa->ifa_addr->sa_family != AF_INET || !(ifa->ifa_flags & IFF_UP) ||
+            (ifa->ifa_flags & IFF_LOOPBACK))
+            continue;
+        const struct sockaddr_in *sin = (const struct sockaddr_in *)ifa->ifa_addr;
+        if (sin->sin_addr.s_addr == htonl(INADDR_ANY) || sin->sin_addr.s_addr == htonl(INADDR_LOOPBACK))
+            continue;
+        char buffer[INET_ADDRSTRLEN];
+        if (inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer))) {
+            address = [NSString stringWithUTF8String:buffer];
+            break;
+        }
+    }
+    freeifaddrs(addresses);
+    return address;
 }
 
 NS_INLINE BOOL isRepeaterEnabled(void) {
@@ -299,7 +327,7 @@ static void printUsageAndExit(const char *prog) {
     fprintf(stderr, "Usage: %s [-p port] [-n name] [options]\n\n", prog);
 
     fprintf(stderr, "Basic:\n");
-    fprintf(stderr, "  -b host    Bind host address (IPv4/IPv6 literal, default to all)\n");
+    fprintf(stderr, "  -b host    Bind host (IPv4/IPv6 literal or en0 for Wi-Fi IPv4; default to all)\n");
     fprintf(stderr, "  -p port    VNC TCP port (default: %d)\n", gPort);
     fprintf(stderr, "  -c port    Client management TCP port (0=off, default: 0)\n");
     fprintf(stderr, "  -n name    Desktop name (default: %s)\n", [gDesktopName UTF8String]);
@@ -364,7 +392,7 @@ static void printUsageAndExit(const char *prog) {
     fprintf(stderr, "Environment:\n");
     fprintf(
         stderr,
-        "  TROLLVNC_PASSWORD                 Classic VNC password (enables VNC auth when set; first 8 chars used)\n");
+        "  TROLLVNC_PASSWORD                 Classic VNC password (default: TrollVNC; empty disables full-access password; first 8 chars used)\n");
     fprintf(stderr,
             "  TROLLVNC_VIEWONLY_PASSWORD        View-only password; passwords stored as [full..., view-only...]\n");
     fprintf(stderr, "  TROLLVNC_REPEATER_RETRY_INTERVAL  Repeater retry interval (default: 0)\n\n");
@@ -498,9 +526,9 @@ static void parseDaemonOptions(void) {
     if ([portN isKindOfClass:[NSNumber class]] || [portN isKindOfClass:[NSString class]]) {
         int v = portN.intValue;
         if (v < 1024 || v > 65535) {
-            // Privileged or invalid -> fallback to default 5901
-            TVLog(@"-daemon: invalid TCP Port=%d; using default 5901", v);
-            gPort = 5901;
+            // Privileged or invalid -> fallback to the server default
+            TVLog(@"-daemon: invalid TCP Port=%d; using default %d", v, kTvDefaultPort);
+            gPort = kTvDefaultPort;
         } else {
             gPort = v;
         }
@@ -4573,7 +4601,20 @@ static void setupRfbScreen(int argc, const char *argv[]) {
     struct in6_addr v6Addr;
     memset(&v6Addr, 0, sizeof(v6Addr));
 
-    TVBindHostKind hostKind = tvClassifyBindHost(gBindHost, &v4Addr, &v6Addr);
+    NSString *bindHost = [gBindHost stringByTrimmingCharactersInSet:
+                                      [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    gBindEn0 = [bindHost isEqualToString:@"en0"];
+    if (gBindEn0) {
+        bindHost = tvEn0IPv4Address();
+        if (!bindHost) {
+            TVPrintError("BindHost=en0 requires an active Wi-Fi IPv4 address; refusing to listen on all interfaces");
+            exit(EXIT_FAILURE);
+        }
+        // LibVNCServer otherwise opens an additional IPv6 wildcard listener.
+        gScreen->ipv6port = -1;
+        TVLog(@"BindHost=en0 resolved to %@ (IPv4 only; restart after address changes)", bindHost);
+    }
+    TVBindHostKind hostKind = tvClassifyBindHost(bindHost, &v4Addr, &v6Addr);
     if (hostKind == kTVBindHostKindIPv4) {
         gScreen->listenInterface = v4Addr;
     } else if (hostKind == kTVBindHostKindIPv6) {
@@ -4645,8 +4686,10 @@ static rfbBool tvCheckPasswordByList(rfbClientPtr cl, const char *passwd, int le
 }
 
 static void setupRfbClassicAuthentication(void) {
-    // Enable classic VNC authentication if environment variables are provided
+    // Missing configuration uses the fork default; an explicitly empty value stays empty.
     const char *envPwd = getenv("TROLLVNC_PASSWORD");
+    if (!envPwd)
+        envPwd = kTvDefaultPassword;
     const char *envViewPwd = getenv("TROLLVNC_VIEWONLY_PASSWORD");
 
     int fullCount = (envPwd && *envPwd) ? 1 : 0;
@@ -4705,7 +4748,9 @@ static void setupRfbHttpServer(void) {
     gScreen->httpEnableProxyConnect = TRUE; // always allow CONNECT if HTTP is enabled
     if (gHttpPort > 0) {
         gScreen->httpPort = gHttpPort; // enable HTTP on specified port
-        gScreen->http6Port = gHttpPort;
+        // A negative service is rejected by LibVNCServer's getaddrinfo path.
+        // Zero would select a default port and still open an IPv6 listener.
+        gScreen->http6Port = gBindEn0 ? -1 : gHttpPort;
         if (gHttpDirOverride) {
             // Use override absolute path
             gScreen->httpDir = strdup(gHttpDirOverride);
