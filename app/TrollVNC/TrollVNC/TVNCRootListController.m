@@ -29,6 +29,7 @@
 #import <stdlib.h>
 #import <string.h>
 
+#import "Control.h"
 #import "StripedTextTableViewController.h"
 #import "TVNCClientListController.h"
 #import "TVNCRootListController.h"
@@ -122,7 +123,7 @@ NS_INLINE NSString *TVNCGetEn0IPAddress(void) {
     return ipv4 ?: ipv6; // prefer IPv4
 }
 
-NS_INLINE BOOL TVNCIsValidBindHostLiteral(NSString *host) {
+NS_INLINE BOOL TVNCIsValidBindHost(NSString *host) {
     if (!host)
         return YES;
 
@@ -132,6 +133,9 @@ NS_INLINE BOOL TVNCIsValidBindHostLiteral(NSString *host) {
 
     const char *cstr = trimmed.UTF8String;
     if (!cstr || cstr[0] == '\0')
+        return YES;
+
+    if ([trimmed isEqualToString:@"en0"])
         return YES;
 
     struct in_addr v4;
@@ -437,7 +441,7 @@ NS_INLINE BOOL TVNCIsValidBindHostLiteral(NSString *host) {
     [self.view endEditing:YES];
 
     // Validate ports before restarting service, using -readPreferenceValue: to get live edits
-    int port = 5901;
+    int port = kTvDefaultPort;
     int httpPort = 0;
     NSString *bindHost = @"";
 
@@ -495,10 +499,10 @@ NS_INLINE BOOL TVNCIsValidBindHostLiteral(NSString *host) {
         return; // do not restart now
     }
 
-    if (!TVNCIsValidBindHostLiteral(bindHost)) {
+    if (!TVNCIsValidBindHost(bindHost)) {
         NSString *t = NSLocalizedStringFromTableInBundle(@"Invalid Bind Address", @"Localizable", self.bundle, nil);
         NSString *msg = NSLocalizedStringFromTableInBundle(
-            @"Bind address must be a valid IPv4/IPv6 literal, or empty to listen on all interfaces.",
+            @"Bind address must be a valid IPv4/IPv6 literal, en0 for Wi-Fi IPv4, or empty to listen on all interfaces.",
             @"Localizable", self.bundle, nil);
         NSString *ok = NSLocalizedStringFromTableInBundle(@"OK", @"Localizable", self.bundle, nil);
 

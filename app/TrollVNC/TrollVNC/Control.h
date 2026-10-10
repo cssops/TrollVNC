@@ -19,5 +19,8 @@
 
 FOUNDATION_EXTERN int gOrientationFixQuad;
 
+static const int kTvDefaultPort = 15901;
+static const char kTvDefaultPassword[] = "TrollVNC";
+
 static const int kTvAlivePort = 46751;
 static const int kTvDefaultCtlPort = 46752;
