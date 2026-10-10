@@ -42,7 +42,7 @@
 
 "Bind Address" = "Bind Address";
 
-"Bind to a specific local IP address. Leave empty to listen on all interfaces." = "Bind to a specific local IP address. Leave empty to listen on all interfaces.";
+"Bind to a local IP address, or enter en0 for the current Wi-Fi IPv4 address only. Restart after Wi-Fi address changes. Leave empty to listen on all interfaces." = "Bind to a local IP address, or enter en0 for the current Wi-Fi IPv4 address only. Restart after Wi-Fi address changes. Leave empty to listen on all interfaces.";
 
 "Cancel" = "Cancel";
 
@@ -226,7 +226,7 @@
 
 "Viewer" = "Viewer";
 
-"VNC TCP port. Default 5901. Valid range 1024–65535." = "VNC TCP port. Default 5901. Valid range 1024–65535.";
+"VNC TCP port. Default 15901. Valid range 1024–65535." = "VNC TCP port. Default 15901. Valid range 1024–65535.";
 
 "Wheel Step (px)" = "Wheel Step (px)";
 
