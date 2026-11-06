@@ -42,7 +42,7 @@
 
 "Bind Address" = "Bind Address";
 
-"Defaults to en0 for the current Wi-Fi IPv4 address only. Waits until Wi-Fi obtains an IPv4 address. Restart after Wi-Fi address changes. Enter a local IP address, or leave empty to listen on all interfaces." = "Defaults to en0 for the current Wi-Fi IPv4 address only. Waits until Wi-Fi obtains an IPv4 address. Restart after Wi-Fi address changes. Enter a local IP address, or leave empty to listen on all interfaces.";
+"Defaults to auto: probe the outbound IPv4, then fall back to en2, en0, and other usable interfaces. Waits only if no usable address exists. Reverse mode does not wait. Restart after address changes. Enter a local IP address, or leave empty to listen on all interfaces." = "Defaults to auto: probe the outbound IPv4, then fall back to en2, en0, and other usable interfaces. Waits only if no usable address exists. Reverse mode does not wait. Restart after address changes. Enter a local IP address, or leave empty to listen on all interfaces.";
 
 "Cancel" = "Cancel";
 

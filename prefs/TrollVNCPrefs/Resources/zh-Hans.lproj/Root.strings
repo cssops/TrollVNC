@@ -42,7 +42,7 @@
 
 "Bind Address" = "绑定地址";
 
-"Defaults to en0 for the current Wi-Fi IPv4 address only. Waits until Wi-Fi obtains an IPv4 address. Restart after Wi-Fi address changes. Enter a local IP address, or leave empty to listen on all interfaces." = "默认使用 en0，仅监听当前 Wi-Fi IPv4 地址。未获取到地址时持续等待，直到 Wi-Fi 获得 IPv4 地址。Wi-Fi 地址变化后需重启服务。也可填写指定本地 IP 地址，留空则监听所有网卡。";
+"Defaults to auto: probe the outbound IPv4, then fall back to en2, en0, and other usable interfaces. Waits only if no usable address exists. Reverse mode does not wait. Restart after address changes. Enter a local IP address, or leave empty to listen on all interfaces." = "默认 auto：优先探测出口 IPv4，失败后按 en2、en0、其他可用网卡顺序回退。仅在无可用地址时等待，反向连接模式不等待。地址变化后需重启服务。也可填写指定本地 IP 地址，留空则监听所有网卡。";
 
 "Cancel" = "取消";
 

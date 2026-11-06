@@ -50,6 +50,7 @@
 #import "FBSOrientationObserver.h"
 #import "IOKitSPI.h"
 #import "Logging.h"
+#import "LocalIPv4.h"
 #import "PSAssistiveTouchSettingsDetail.h"
 #import "STHIDEventGenerator.h"
 #import "ScreenCapturer.h"
@@ -69,8 +70,8 @@ int gOrientationFixQuad = 0; // 0=0°, 1=90°CW, 2=180°, 3=270°CW
 static BOOL gEnabled = YES;
 static int gPort = kTvDefaultPort;
 static int gTvCtlPort = 0;        // port for control connections (0 = disabled)
-static BOOL gBindEn0 = NO;       // en0 mode binds only its current IPv4 address
-static NSString *gBindHost = @"en0"; // Wi-Fi IPv4 by default; CLI/config can override
+static BOOL gBindAutoIPv4 = NO;   // automatic mode binds one selected IPv4 address
+static NSString *gBindHost = @"auto"; // outbound IPv4 with interface fallback by default
 static NSString *gDesktopName = @"TrollVNC";
 static BOOL gViewOnly = NO;
 static double gKeepAliveSec = 0.0; // 15..86400
@@ -183,31 +184,6 @@ static TVBindHostKind tvClassifyBindHost(NSString *host, in_addr_t *outIPv4, str
     }
 
     return kTVBindHostKindInvalid;
-}
-
-// Resolve en0 only, never the default route (which could be cellular or a VPN).
-static NSString *tvEn0IPv4Address(void) {
-    struct ifaddrs *addresses = NULL;
-    if (getifaddrs(&addresses) != 0)
-        return nil;
-
-    NSString *address = nil;
-    for (struct ifaddrs *ifa = addresses; ifa; ifa = ifa->ifa_next) {
-        if (!ifa->ifa_name || !ifa->ifa_addr || strcmp(ifa->ifa_name, "en0") != 0 ||
-            ifa->ifa_addr->sa_family != AF_INET || !(ifa->ifa_flags & IFF_UP) ||
-            (ifa->ifa_flags & IFF_LOOPBACK))
-            continue;
-        const struct sockaddr_in *sin = (const struct sockaddr_in *)ifa->ifa_addr;
-        if (sin->sin_addr.s_addr == htonl(INADDR_ANY) || sin->sin_addr.s_addr == htonl(INADDR_LOOPBACK))
-            continue;
-        char buffer[INET_ADDRSTRLEN];
-        if (inet_ntop(AF_INET, &sin->sin_addr, buffer, sizeof(buffer))) {
-            address = [NSString stringWithUTF8String:buffer];
-            break;
-        }
-    }
-    freeifaddrs(addresses);
-    return address;
 }
 
 NS_INLINE BOOL isRepeaterEnabled(void) {
@@ -327,7 +303,7 @@ static void printUsageAndExit(const char *prog) {
     fprintf(stderr, "Usage: %s [-p port] [-n name] [options]\n\n", prog);
 
     fprintf(stderr, "Basic:\n");
-    fprintf(stderr, "  -b host    Bind host (IPv4/IPv6 literal or en0 for Wi-Fi IPv4; default to en0)\n");
+    fprintf(stderr, "  -b host    Bind host (IPv4/IPv6 literal or auto for selected local IPv4; default to auto; en0 is an alias)\n");
     fprintf(stderr, "  -p port    VNC TCP port (default: %d)\n", gPort);
     fprintf(stderr, "  -c port    Client management TCP port (0=off, default: 0)\n");
     fprintf(stderr, "  -n name    Desktop name (default: %s)\n", [gDesktopName UTF8String]);
@@ -4603,21 +4579,27 @@ static void setupRfbScreen(int argc, const char *argv[]) {
 
     NSString *bindHost = [gBindHost stringByTrimmingCharactersInSet:
                                       [NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    gBindEn0 = [bindHost isEqualToString:@"en0"];
-    if (gBindEn0) {
-        bindHost = tvEn0IPv4Address();
-        if (!bindHost) {
-            TVLog(@"BindHost=en0: waiting for a Wi-Fi IPv4 address");
-            do {
-                sleep(1);
-                @autoreleasepool {
-                    bindHost = tvEn0IPv4Address();
-                }
-            } while (!bindHost);
+    // Keep old saved BindHost=en0 settings compatible with the automatic policy.
+    gBindAutoIPv4 = [bindHost isEqualToString:@"auto"] || [bindHost isEqualToString:@"en0"];
+    if (gBindAutoIPv4) {
+        if (isRepeaterEnabled()) {
+            // Reverse mode has no local listeners and must not wait for a bind address.
+            bindHost = nil;
+        } else {
+            bindHost = JBLocalIPv4Address();
+            if (!bindHost) {
+                TVLog(@"Automatic IPv4 binding: waiting for a usable local address");
+                do {
+                    sleep(1);
+                    @autoreleasepool {
+                        bindHost = JBLocalIPv4Address();
+                    }
+                } while (!bindHost);
+            }
+            TVLog(@"Automatic IPv4 binding resolved to %@ (restart after address changes)", bindHost);
         }
         // LibVNCServer otherwise opens an additional IPv6 wildcard listener.
         gScreen->ipv6port = -1;
-        TVLog(@"BindHost=en0 resolved to %@ (IPv4 only; restart after address changes)", bindHost);
     }
     TVBindHostKind hostKind = tvClassifyBindHost(bindHost, &v4Addr, &v6Addr);
     if (hostKind == kTVBindHostKindIPv4) {
@@ -4755,7 +4737,7 @@ static void setupRfbHttpServer(void) {
         gScreen->httpPort = gHttpPort; // enable HTTP on specified port
         // A negative service is rejected by LibVNCServer's getaddrinfo path.
         // Zero would select a default port and still open an IPv6 listener.
-        gScreen->http6Port = gBindEn0 ? -1 : gHttpPort;
+        gScreen->http6Port = gBindAutoIPv4 ? -1 : gHttpPort;
         if (gHttpDirOverride) {
             // Use override absolute path
             gScreen->httpDir = strdup(gHttpDirOverride);

@@ -54,25 +54,34 @@ standalone app uses the preference controllers and resources internally.
 When upgrading the same package, dpkg removes the old pane and its entry;
 PreferenceLoader itself may remain installed for other tweaks.
 
-### Wi-Fi address binding
+### Automatic IPv4 address binding
 
-**Bind Address** defaults to `en0`, including when no saved setting exists.
-You can also select this mode with `trollvncserver -b en0`.
-At startup, the server resolves the active `en0` IPv4 address and binds VNC
-and optional HTTP/WebSocket listeners to that address. IPv6 listeners are
-disabled in this mode. If `en0` has no active IPv4 address, startup waits
-and retries once per second until Wi-Fi obtains an IPv4 address;
-it never falls back to listening on all interfaces. Restart the service after
-switching Wi-Fi networks or after its DHCP address changes. This is local
-address binding, not a filter on clients' source networks; routed clients that
-can reach that address may still connect. An empty Bind Address continues to
-listen on all interfaces.
+**Bind Address** defaults to `auto`, including when no saved setting exists.
+`trollvncserver -b auto` uses the same selection policy as Dopamine-roothide's
+`BaseBin/utils/LocalIPv4.h`; a standalone copy is included as `src/LocalIPv4.h`.
+Existing saved `en0` values and `-b en0` are accepted as aliases for this policy.
+
+The server first selects the outbound IPv4 source using a UDP route probe to
+`www.apple.com:443`, without sending application data. If that fails, it selects
+an active IPv4 interface in this order: `en2`, `en0`, then another usable interface.
+Loopback, unspecified, link-local, multicast and reserved addresses are excluded.
+The probe may select cellular or VPN addresses according to system routing.
+DNS resolution is synchronous; an offline LAN address is selected after resolution
+or route selection fails.
+
+VNC and optional HTTP/WebSocket listeners bind to the selected IPv4 only;
+IPv6 wildcard listeners are disabled in this mode. If no usable address exists,
+startup retries once per second. Reverse viewer/repeater mode skips local address
+selection and waiting entirely because it does not open local listeners.
+Restart after the selected address changes. This binds the local address and
+does not filter clients by their source networks. An empty Bind Address continues
+to listen on all interfaces; explicit IPv4/IPv6 literals remain supported.
 
 ### Options
 
 **Basic**:
 
-- `-b host`   Bind host address (IPv4/IPv6 literal or `en0` for Wi-Fi IPv4, default: `en0`)
+- `-b host`   Bind host address (IPv4/IPv6 literal or `auto` for automatic IPv4 selection, default: `auto`; `en0` is a compatibility alias)
 - `-p port`   TCP port for VNC (default: `15901`)
 - `-c port`   TCP port for client management (listening on localhost only; `0` disables, default: `0`)
 - `-n name`   Desktop name shown to clients (default: `TrollVNC`)
@@ -510,7 +519,7 @@ TrollVNC can be preconfigured via a bundled `Managed.plist` for supervised or fl
 
 - Strings:
   - `DesktopName`: Desktop name shown to clients
-  - `BindHost`: IPv4/IPv6 address literal, or `en0` (default) to wait for and bind the current Wi-Fi IPv4 address only
+  - `BindHost`: IPv4/IPv6 address literal, or `auto` (default) to select outbound IPv4 with fallback to en2, en0, and other usable interfaces; legacy `en0` is an alias
   - `ModifierMap`: `std` | `altcmd`
   - `FrameRateSpec`: e.g., `"60"`, `"30-60"`, or `"30:60:120"`
   - `WheelTuning`: advanced wheel tuning string, e.g., `"amp=0.25,cap=1.0,max=256,clamp=3.0"`

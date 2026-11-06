@@ -135,7 +135,7 @@ NS_INLINE BOOL TVNCIsValidBindHost(NSString *host) {
     if (!cstr || cstr[0] == '\0')
         return YES;
 
-    if ([trimmed isEqualToString:@"en0"])
+    if ([trimmed isEqualToString:@"auto"] || [trimmed isEqualToString:@"en0"])
         return YES;
 
     struct in_addr v4;
@@ -502,7 +502,7 @@ NS_INLINE BOOL TVNCIsValidBindHost(NSString *host) {
     if (!TVNCIsValidBindHost(bindHost)) {
         NSString *t = NSLocalizedStringFromTableInBundle(@"Invalid Bind Address", @"Localizable", self.bundle, nil);
         NSString *msg = NSLocalizedStringFromTableInBundle(
-            @"Bind address must be a valid IPv4/IPv6 literal, en0 for Wi-Fi IPv4, or empty to listen on all interfaces.",
+            @"Bind address must be a valid IPv4/IPv6 literal, auto (or legacy en0) for automatic IPv4 selection, or empty to listen on all interfaces.",
             @"Localizable", self.bundle, nil);
         NSString *ok = NSLocalizedStringFromTableInBundle(@"OK", @"Localizable", self.bundle, nil);
 
